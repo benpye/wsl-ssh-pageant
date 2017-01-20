@@ -11,7 +11,7 @@ A Pageant -> TCP bridge for use with WSL, allowing for Pageant to be used as an 
 2. In WSL run the following, where `13000` is the port set previously
 
 ```
-$ while true; do socat UNIX-LISTEN:/tmp/wsl-ssh-pageant.socket TCP:127.0.0.1:13000; done &
+$ while true; do socat UNIX-LISTEN:/tmp/wsl-ssh-pageant.socket,unlink-close,unlink-early TCP4:127.0.0.1:13000; done &
 $ export SSH_AUTH_SOCK=/tmp/wsl-ssh-pageant.socket
 ```
 
