@@ -135,7 +135,7 @@ class Program
         // Start listening for client requests.
         server.Start();
 
-        Console.WriteLine($"Listening on 127.0.0.1:{port}");
+        Console.WriteLine(string.Format("Listening on 127.0.0.1:{0}", port));
 
         // Buffer for reading data
         var bytes = new Byte[AGENT_MAX_MSGLEN];
