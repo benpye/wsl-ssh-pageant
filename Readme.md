@@ -1,5 +1,7 @@
 # wsl-ssh-pageant
 
+**Now supports multiple ssh connections concurrently!**
+
 A Pageant -> TCP bridge for use with WSL, allowing for Pageant to be used as an ssh-ageant within the WSL environment.
 
 ![Demo](demo.gif?raw=True)
@@ -11,7 +13,7 @@ A Pageant -> TCP bridge for use with WSL, allowing for Pageant to be used as an 
 2. In WSL run the following, where `13000` is the port set previously
 
 ```
-$ while true; do socat UNIX-LISTEN:/tmp/wsl-ssh-pageant.socket,unlink-close,unlink-early TCP4:127.0.0.1:13000; done &
+$ socat UNIX-LISTEN:/tmp/wsl-ssh-pageant.socket,unlink-close,unlink-early,fork TCP4:127.0.0.1:13000 &
 $ export SSH_AUTH_SOCK=/tmp/wsl-ssh-pageant.socket
 ```
 

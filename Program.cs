@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 class Program
 {
@@ -116,6 +117,28 @@ class Program
         return ret;
     }
 
+    private static void Callback(Task<TcpClient> t, object state)
+    {
+        var client = t.Result;
+
+        // Get a stream object for reading and writing
+        var stream = client.GetStream();
+
+        int i;
+
+        // Buffer for reading data
+        var bytes = new Byte[AGENT_MAX_MSGLEN];
+
+        // Loop to receive all the data sent by the client.
+        while((i = stream.Read(bytes, 0, bytes.Length))!=0)
+        {
+            var msg = Query(bytes);
+            stream.Write(msg, 0, msg.Length);
+        }
+
+        client.Dispose();
+    }
+
     static void Main(string[] args)
     {
         var port = 13000;
@@ -135,32 +158,14 @@ class Program
         // Start listening for client requests.
         server.Start();
 
-        Console.WriteLine(string.Format("Listening on 127.0.0.1:{0}", port));
-
-        // Buffer for reading data
-        var bytes = new Byte[AGENT_MAX_MSGLEN];
+        Console.WriteLine("Listening on 127.0.0.1:{0}", port);
 
         // Enter the listening loop.
-        while(true) 
+        while(true)
         {
             var t = server.AcceptTcpClientAsync();
+            t.ContinueWith(Callback, null);
             t.Wait();
-
-            TcpClient client = t.Result;
-
-            // Get a stream object for reading and writing
-            var stream = client.GetStream();
-
-            int i;
-
-            // Loop to receive all the data sent by the client.
-            while((i = stream.Read(bytes, 0, bytes.Length))!=0) 
-            {   
-                var msg = Query(bytes);
-                stream.Write(msg, 0, msg.Length);
-            }
-
-            client.Dispose();
         }
     }
 }
