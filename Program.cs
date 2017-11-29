@@ -117,10 +117,8 @@ class Program
         return ret;
     }
 
-    private static void Callback(Task<TcpClient> t, object state)
+    private static void Callback(TcpClient client, object state)
     {
-        var client = t.Result;
-
         // Get a stream object for reading and writing
         var stream = client.GetStream();
 
@@ -139,7 +137,7 @@ class Program
         client.Dispose();
     }
 
-    static void Main(string[] args)
+    static async void Main(string[] args)
     {
         var port = 13000;
 
@@ -163,9 +161,8 @@ class Program
         // Enter the listening loop.
         while(true)
         {
-            var t = server.AcceptTcpClientAsync();
-            t.ContinueWith(Callback, null);
-            t.Wait();
+            var client = await server.AcceptTcpClientAsync();
+            Callback(client);
         }
     }
 }
