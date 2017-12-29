@@ -8,7 +8,7 @@ A Pageant -> TCP bridge for use with WSL, allowing for Pageant to be used as an 
 
 ## How to use
 
-1. On the Windows side run Pageant (or compatible agent) and `wsl-ssl-pageant.exe`.
+1. On the Windows side run Pageant (or compatible agent such as gpg4win).
 
 2. Ensure that the directory containing `wsl-ssh-pageant.exe` is on the `PATH` in WSL, for example my path contains `/mnt/c/git/wsl-ssh-pageant'
 
