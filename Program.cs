@@ -117,12 +117,10 @@ class Program
         return ret;
     }
 
-    private static void Callback(Task<TcpClient> t, object state)
+    static void Main(string[] args)
     {
-        var client = t.Result;
-
-        // Get a stream object for reading and writing
-        var stream = client.GetStream();
+        var outstream = Console.OpenStandardOutput();
+        var instream  = Console.OpenStandardInput();
 
         int i;
 
@@ -130,42 +128,10 @@ class Program
         var bytes = new Byte[AGENT_MAX_MSGLEN];
 
         // Loop to receive all the data sent by the client.
-        while((i = stream.Read(bytes, 0, bytes.Length))!=0)
+        while((i = instream.Read(bytes, 0, bytes.Length))!=0)
         {
             var msg = Query(bytes);
-            stream.Write(msg, 0, msg.Length);
-        }
-
-        client.Dispose();
-    }
-
-    static void Main(string[] args)
-    {
-        var port = 13000;
-
-        if(args.Length == 1)
-            port = Int32.Parse(args[0]);
-        else if(args.Length != 0)
-        {
-            Console.WriteLine("wsl-ssh-agent.exe <port: default 13000>");
-            return;
-        }
-
-        var localAddr = IPAddress.Parse("127.0.0.1");
-
-        var server = new TcpListener(localAddr, port);
-
-        // Start listening for client requests.
-        server.Start();
-
-        Console.WriteLine("Listening on 127.0.0.1:{0}", port);
-
-        // Enter the listening loop.
-        while(true)
-        {
-            var t = server.AcceptTcpClientAsync();
-            t.ContinueWith(Callback, null);
-            t.Wait();
+            outstream.Write(msg, 0, msg.Length);
         }
     }
 }
