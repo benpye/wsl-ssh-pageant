@@ -4,6 +4,8 @@
 
 A Pageant -> TCP bridge for use with WSL, allowing for Pageant to be used as an ssh-ageant within the WSL environment.
 
+Also check out [NZSmartie's Go version](https://github.com/NZSmartie/wsl-ssh-pageant).
+
 ![Demo](demo.gif?raw=True)
 
 ## How to use
