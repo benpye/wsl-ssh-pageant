@@ -1,24 +1,21 @@
 # wsl-ssh-pageant
 
-**Now supports multiple ssh connections concurrently!**
-
-A Pageant -> TCP bridge for use with WSL, allowing for Pageant to be used as an ssh-ageant within the WSL environment.
-
-Also check out [NZSmartie's Go version](https://github.com/NZSmartie/wsl-ssh-pageant).
-
-![Demo](demo.gif?raw=True)
+**Now uses freshly baked AF_UNIX support in Windows 10 insider**
 
 ## How to use
 
 1. On the Windows side run Pageant (or compatible agent such as gpg4win).
 
-2. Ensure that the directory containing `wsl-ssh-pageant.exe` is on the `PATH` in WSL, for example my path contains `/mnt/c/git/wsl-ssh-pageant'
+2. Run wsl-ssh-pageant.exe on windows in a short path (max ~100 characters total!)
 
 3. In WSL run the following
 
 ```
-$ socat UNIX-LISTEN:/tmp/wsl-ssh-pageant.socket,unlink-close,unlink-early,fork EXEC:"wsl-ssh-pageant.exe" &
-$ export SSH_AUTH_SOCK=/tmp/wsl-ssh-pageant.socket
+$ export SSH_AUTH_SOCK=/mnt/your-path-to-wsl-ssh-pageant.exe/ssh-agent.sock
+```
+For example, if you have wsl-ssh-pageant.exe in `C:\wsl-ssh-pageant`
+```
+$ export SSH_AUTH_SOCK=/mnt/c/wsl-ssh-pageant/ssh-agent.sock
 ```
 
 4. The SSH keys from Pageant should now be usable by `ssh`!

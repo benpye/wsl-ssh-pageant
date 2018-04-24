@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -79,7 +80,7 @@ class Program
     static readonly IntPtr AGENT_COPYDATA_ID = new IntPtr(0x804e50ba);
 
     // Send ssh-agent query to Pageant, ssh-agent and Pageant use same messages
-    static byte[] Query(byte[] buf)
+    static byte[] Query(byte[] buf, int buflen)
     {
         var hwnd = FindWindowByCaption(IntPtr.Zero, "Pageant");
 
@@ -89,17 +90,17 @@ class Program
 
         var sharedMemory = MapViewOfFile(fileMap, FileMapAccess.FileMapWrite, 0, 0, UIntPtr.Zero);
 
-        Marshal.Copy(buf, 0, sharedMemory, buf.Length);
+        Marshal.Copy(buf, 0, sharedMemory, buflen);
 
         var cds = new COPYDATASTRUCT();
         cds.dwData = AGENT_COPYDATA_ID;
         cds.cbData = mapName.Length + 1;
-        var foo = Encoding.UTF8.GetBytes(mapName);
-        var bar = new byte[foo.Length + 1];
-        foo.CopyTo(bar, 0);
-        bar[bar.Length - 1] = 0;
-        var gch = GCHandle.Alloc(bar);
-        cds.lpData = Marshal.UnsafeAddrOfPinnedArrayElement(bar, 0);
+        var mapNameBytes = Encoding.UTF8.GetBytes(mapName);
+        var mapNameBytesZero = new byte[mapNameBytes.Length + 1];
+        mapNameBytes.CopyTo(mapNameBytesZero, 0);
+        mapNameBytesZero[mapNameBytesZero.Length - 1] = 0;
+        var gch = GCHandle.Alloc(mapNameBytesZero);
+        cds.lpData = Marshal.UnsafeAddrOfPinnedArrayElement(mapNameBytesZero, 0);
         var data = Marshal.AllocHGlobal(Marshal.SizeOf(cds));
         Marshal.StructureToPtr(cds, data, false);
         var rcode = SendMessage(hwnd, WM_COPYDATA, IntPtr.Zero, data);
@@ -117,21 +118,98 @@ class Program
         return ret;
     }
 
+    private static void Callback(Task<Socket> t, object state)
+    {
+        var client = t.Result;
+        client.ReceiveTimeout = 1000;
+        client.SendTimeout = 1000;
+
+        try
+        {
+            ServiceSocket(client);
+        }
+        catch (TimeoutException)
+        {
+            // Ignore timeouts, those should not explode our stuff
+        }
+        catch (SocketException e)
+        {
+            // Other socket errors can happen and shouldn't kill the app
+            Console.Error.WriteLine(e);
+        }
+
+        client.Dispose();
+    }
+
+    private static bool ReadUntil(Socket client, byte[] buf, int buflen, int offset = 0)
+    {
+        int i;
+        while ((i = client.Receive(buf, offset, buflen - offset, SocketFlags.None)) != 0)
+        {
+            offset += i;
+            if (offset >= buflen)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void ServiceSocket(Socket client)
+    {
+        var lenBytes = new byte[4]; // uint32
+
+        while (true)
+        {
+            // Read length as uint32 (4 bytes)
+            if (!ReadUntil(client, lenBytes, lenBytes.Length))
+            {
+                break;
+            }
+            var len = (lenBytes[0] << 24) |
+                      (lenBytes[1] << 16) |
+                      (lenBytes[2] << 8 ) |
+                      (lenBytes[3]);
+
+            // Read actual data and copy length to the start of it
+            var bytes = new byte[4 + len];
+            lenBytes.CopyTo(bytes, 0);
+            if (!ReadUntil(client, bytes, bytes.Length, 4))
+            {
+                break;
+            }
+
+            var msg = Query(bytes, bytes.Length);
+            client.Send(msg, 0, msg.Length, SocketFlags.None);
+        }
+    }
+
     static void Main(string[] args)
     {
-        var outstream = Console.OpenStandardOutput();
-        var instream  = Console.OpenStandardInput();
+        var socketPath = @".\ssh-agent.sock";
 
-        int i;
-
-        // Buffer for reading data
-        var bytes = new Byte[AGENT_MAX_MSGLEN];
-
-        // Loop to receive all the data sent by the client.
-        while((i = instream.Read(bytes, 0, bytes.Length))!=0)
+        if (args.Length == 1)
+            socketPath = args[0];
+        else if(args.Length != 0)
         {
-            var msg = Query(bytes);
-            outstream.Write(msg, 0, msg.Length);
+            Console.WriteLine(@"wsl-ssh-agent.exe <path: .\ssh-agent.sock>");
+            return;
+        }
+
+        File.Delete(socketPath);
+        var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
+        server.Bind(new UnixEndPoint(socketPath));
+        server.Listen(5);
+
+        Console.WriteLine(@"Listening on {0}", socketPath);
+
+        // Enter the listening loop.
+        while(true)
+        {
+            var t = server.AcceptAsync();
+            t.ContinueWith(Callback, null);
+            t.Wait();
         }
     }
 }
+
