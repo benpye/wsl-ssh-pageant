@@ -1,66 +1,54 @@
-using System;
-using System.IO;
-using System.Net.Sockets;
-using System.Threading;
+using Microsoft.Extensions.CommandLineUtils;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace WslSSHPageant
 {
     class Program
     {
-        static Mutex mutex;
-
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
-            var socketPath = @".\ssh-agent.sock";
+            CommandLineApplication commandLineApplication = new CommandLineApplication(throwOnUnexpectedArg: false);
 
-            if (args.Length == 1)
+            CommandOption wslSocketPath = commandLineApplication.Option(
+                "--wsl <path>",
+                "Which path to listen on with the AF_UNIX socket for WSL",
+                CommandOptionType.SingleValue);
+
+            CommandOption winsshPipeName = commandLineApplication.Option(
+                "--winssh <name>",
+                "Which pipe to listen on for Windows 10 OpenSSH Client",
+                CommandOptionType.SingleValue);
+
+            commandLineApplication.HelpOption("-? | -h | --help");
+
+            List<Task> runningServers = new List<Task>();
+
+            commandLineApplication.OnExecute(() =>
             {
-                socketPath = args[0];
-            }
-            else if (args.Length != 0)
-            {
-                Console.WriteLine(@"wsl-ssh-agent.exe <path: .\ssh-agent.sock>");
-                return;
-            }
-
-            socketPath = Path.GetFullPath(socketPath);
-
-            var mutexName = socketPath + "-{642b3e23-f0f5-4cc1-8a41-bf95e9a438ad}";
-            mutexName = mutexName.Replace(Path.DirectorySeparatorChar, '_');
-            mutex = new Mutex(true, mutexName);
-
-            if (!mutex.WaitOne(TimeSpan.Zero, true))
-            {
-                Console.Error.WriteLine("Already running on that AF_UNIX path");
-                Console.In.ReadLine();
-                return;
-            }
-
-            try
-            {
-                File.Delete(socketPath);
-                var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
-                server.Bind(new UnixEndPoint(socketPath));
-                server.Listen(5);
-
-                Console.WriteLine(@"Listening on {0}", socketPath);
-
-                // Enter the listening loop.
-                while (true)
+                if (wslSocketPath.HasValue())
                 {
-                    WSLClient client = new WSLClient(await server.AcceptAsync());
-
-                    // Don't await this, we want to service other sockets
-#pragma warning disable CS4014
-                    client.WorkSocket();
-#pragma warning restore CS4014
+                    WSLSocket wslSocket = new WSLSocket(wslSocketPath.Value());
+                    runningServers.Add(wslSocket.Listen());
                 }
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
+                if (winsshPipeName.HasValue())
+                {
+                    WinSSHSocket winsshSocket = new WinSSHSocket(winsshPipeName.Value());
+                    runningServers.Add(winsshSocket.Listen());
+                }
+
+                if (runningServers.Count < 1)
+                {
+                    commandLineApplication.ShowHelp();
+                    return 1;
+                }
+
+                Task.WaitAny(runningServers.ToArray());
+
+                return 0;
+            });
+
+            commandLineApplication.Execute(args);
         }
     }
 }

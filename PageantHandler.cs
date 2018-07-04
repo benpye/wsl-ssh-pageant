@@ -81,6 +81,7 @@ namespace WslSSHPageant
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool CloseHandle(IntPtr hHandle);
 
+        internal static ArraySegment<byte> AGENT_EMPTY_RESPONSE = new ArraySegment<byte>(new byte[] { 0x00, 0x00, 0x00, 0x05, 0x0c, 0x00, 0x00, 0x00, 0x00 });
         internal const uint AGENT_MAX_MSGLEN = 8192;
         static readonly IntPtr AGENT_COPYDATA_ID = new IntPtr(0x804e50ba);
 
