@@ -14,7 +14,7 @@ namespace WslSSHPageant
     static class PageantHandler
     {
         [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true)]
-        static extern IntPtr FindWindowByCaption(IntPtr ZeroOnly, string lpWindowName);
+        static extern IntPtr FindWindow(string lpWindowClass, string lpWindowName);
 
         [DllImport("kernel32.dll")]
         static extern uint GetCurrentThreadId();
@@ -88,7 +88,7 @@ namespace WslSSHPageant
         // Send ssh-agent query to Pageant, ssh-agent and Pageant use same messages
         internal static byte[] Query(ArraySegment<byte> buf)
         {
-            var hwnd = FindWindowByCaption(IntPtr.Zero, "Pageant");
+            var hwnd = FindWindow("Pageant", "Pageant");
             if (hwnd == IntPtr.Zero)
             {
                 throw new PageantException("HWND not found");
