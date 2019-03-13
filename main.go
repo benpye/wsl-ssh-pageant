@@ -30,6 +30,7 @@ var (
 	namedPipe   = flag.String("winssh", "", "Named pipe for use with Win32 OpenSSH")
 	verbose     = flag.Bool("verbose", false, "Enable verbose logging")
 	systrayFlag = flag.Bool("systray", false, "Enable systray integration")
+	force       = flag.Bool("force", false, "Forces the usage of the socket (unlink existing socket)")
 )
 
 const (
@@ -37,6 +38,9 @@ const (
 	invalidHandleValue = ^windows.Handle(0)
 	pageReadWrite      = 0x4
 	fileMapWrite       = 0x2
+
+	// Windows errors
+	errorSocketAlreadyInUse = 10048
 
 	// ssh-agent/Pageant constants
 	agentMaxMessageLength = 8192
@@ -210,6 +214,27 @@ func main() {
 
 	if *unixSocket != "" {
 		unix, err = net.Listen("unix", *unixSocket)
+		if *force && err != nil {
+			log.Printf("Could not open socket %s, error '%s'\nTrying to unlink %s\n", *unixSocket, err, *unixSocket)
+			operr, ok := err.(*net.OpError)
+			if !ok {
+				log.Fatalf("Could not unlink socket %s, error is not *net.OpError\n", *unixSocket)
+			}
+			syscallerr, ok := operr.Err.(*os.SyscallError)
+			if !ok {
+				log.Fatalf("Could not unlink socket %s, error is not *os.SyscallError\n", *unixSocket)
+			}
+			errno, ok := syscallerr.Err.(syscall.Errno)
+			if !ok {
+				log.Fatalf("Could not unlink socket %s, error is not syscall.Errno\n", *unixSocket)
+			}
+			if errno == errorSocketAlreadyInUse {
+				if err := syscall.Unlink(*unixSocket); err != nil {
+					log.Fatalf("Could not unlink socket %s, error %q\n", *unixSocket, err)
+				}
+			}
+			unix, err = net.Listen("unix", *unixSocket)
+		}
 		if err != nil {
 			log.Fatalf("Could not open socket %s, error '%s'\n", *unixSocket, err)
 		}
