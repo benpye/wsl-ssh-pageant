@@ -1,5 +1,7 @@
 package main
 
+//go:generate go-bindata -pkg $GOPACKAGE -o assets.go assets/
+
 import (
 	"bufio"
 	"encoding/binary"
@@ -17,14 +19,17 @@ import (
 	"unsafe"
 
 	"github.com/Microsoft/go-winio"
+	"github.com/apenwarr/fixconsole"
+	"github.com/getlantern/systray"
 	"github.com/lxn/win"
 	"golang.org/x/sys/windows"
 )
 
 var (
-	unixSocket = flag.String("wsl", "", "Path to Unix socket for passthrough to WSL")
-	namedPipe  = flag.String("winssh", "", "Named pipe for use with Win32 OpenSSH")
-	verbose    = flag.Bool("verbose", false, "Enable verbose logging")
+	unixSocket  = flag.String("wsl", "", "Path to Unix socket for passthrough to WSL")
+	namedPipe   = flag.String("winssh", "", "Named pipe for use with Win32 OpenSSH")
+	verbose     = flag.Bool("verbose", false, "Enable verbose logging")
+	systrayFlag = flag.Bool("systray", false, "Enable systray integration")
 )
 
 const (
@@ -184,6 +189,7 @@ func listenLoop(ln net.Listener) {
 }
 
 func main() {
+	fixconsole.FixConsoleIfNeeded()
 	flag.Parse()
 
 	var unix, pipe net.Listener
@@ -204,7 +210,6 @@ func main() {
 
 	if *unixSocket != "" {
 		unix, err = net.Listen("unix", *unixSocket)
-
 		if err != nil {
 			log.Fatalf("Could not open socket %s, error '%s'\n", *unixSocket, err)
 		}
@@ -213,6 +218,7 @@ func main() {
 		log.Printf("Listening on Unix socket: %s\n", *unixSocket)
 		go func() {
 			listenLoop(unix)
+
 			// If for some reason our listener breaks, kill the program
 			done <- true
 		}()
@@ -222,7 +228,6 @@ func main() {
 		namedPipeFullName := "\\\\.\\pipe\\" + *namedPipe
 		var cfg = &winio.PipeConfig{}
 		pipe, err = winio.ListenPipe(namedPipeFullName, cfg)
-
 		if err != nil {
 			log.Fatalf("Could not open named pipe %s, error '%s'\n", namedPipeFullName, err)
 		}
@@ -231,6 +236,7 @@ func main() {
 		log.Printf("Listening on named pipe: %s\n", namedPipeFullName)
 		go func() {
 			listenLoop(pipe)
+
 			// If for some reason our listener breaks, kill the program
 			done <- true
 		}()
@@ -241,8 +247,44 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Wait until we are signalled as finished
-	<-done
+	if *systrayFlag {
+		go func() {
+			// Wait until we are signalled as finished
+			<-done
 
-	log.Printf("Exiting...")
+			// If for some reason our listener breaks, kill the program
+			systray.Quit()
+		}()
+
+		systray.Run(onSystrayReady, nil)
+
+		log.Print("Exiting...")
+	} else {
+		// Wait until we are signalled as finished
+		<-done
+
+		log.Print("Exiting...")
+	}
+}
+
+func onSystrayReady() {
+	systray.SetTitle("WSL-SSH-Pageant")
+	systray.SetTooltip("WSL-SSH-Pageant")
+
+	data, err := Asset("assets/icon.ico")
+	if err == nil {
+		systray.SetIcon(data)
+	}
+
+	quit := systray.AddMenuItem("Quit", "Quits this app")
+
+	go func() {
+		for {
+			select {
+			case <-quit.ClickedCh:
+				systray.Quit()
+				return
+			}
+		}
+	}()
 }

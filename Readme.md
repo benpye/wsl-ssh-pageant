@@ -30,6 +30,10 @@ $ set SSH_AUTH_SOCK=\\.\pipe\ssh-pageant
 
 4. The SSH keys from Pageant should now be usable by the native Windows SSH client, try using `ssh` in `cmd.exe`
 
+## Systray Integration
+
+To add an icon to the systray run `wsl-ssh-pageant.exe --systray --winssh ssh-pageant` (or using `--wsl`).
+
 ## Note
 
 You can use both `--winssh` and `--wsl` parameters at the same time with the same process to proxy for both
@@ -41,6 +45,17 @@ Grab the latest release on the [releases page](https://github.com/benpye/wsl-ssh
 
 ## How do I build this?
 For WSL support you will need Go 1.12 or later,. Go 1.12 added support for `AF_UNIX` sockets on Windows.
+
+To create the assets.go run:
+```
+go get -u github.com/jteeuwen/go-bindata/...
+go generate
+```
+
+To create a build without a console window:
+```
+go build -ldflags -H=windowsgui
+```
 
 ## What version of Windows do I need?
 You need Windows 10 1803 or later for WSL support as it is the first version supporting `AF_UNIX` sockets. You can still use this with the native [Windows SSH client](https://github.com/PowerShell/Win32-OpenSSH/releases) on earlier builds.
