@@ -1,5 +1,7 @@
 # wsl-ssh-pageant
 
+[![Build Status](https://benpye.visualstudio.com/benpye/_apis/build/status/benpye.wsl-ssh-pageant?branchName=golang)](https://benpye.visualstudio.com/benpye/_build/latest?definitionId=1&branchName=golang)
+
 ## Why
 I use a Yubikey to store a GPG key pair and I like to use this key pair as my SSH key too. GPG on Windows exposes a Pageant style SSH agent and I wanted a way to use this key within WSL. I have rewritten this in Go as it means the release is a single simple binary, and I like Go.
 

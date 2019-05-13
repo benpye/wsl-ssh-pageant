@@ -1,0 +1,30 @@
+trigger:
+- golang
+
+pool:
+  vmImage: 'vs2017-win2016'
+
+variables:
+  GOBIN:  '$(GOPATH)\bin' # Go binaries path
+  GOPATH: '$(system.defaultWorkingDirectory)\gopath' # Go workspace path
+
+steps:
+- task: PowerShell@2
+  inputs:
+    filePath: '.\build.ps1'
+- task: PublishPipelineArtifact@0
+  inputs:
+    artifactName: 'build'
+    targetPath: '.\build'
+- task: GitHubRelease@0
+  displayName: 'GitHub release (create)'
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/golang')
+  inputs:
+    repositoryName: '$(Build.Repository.Name)'
+    action: 'create'
+    target: '$(Build.SourceVersion)'
+    tagSource: 'manual'
+    tag: '$(Build.BuildNumber)'
+    assets: 'build\*'
+    isPreRelease: true
+    gitHubConnection: 'github connection 1'
