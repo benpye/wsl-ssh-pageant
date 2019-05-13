@@ -48,7 +48,6 @@ For WSL support you will need Go 1.12 or later,. Go 1.12 added support for `AF_U
 
 To create the assets.go run:
 ```
-go get -u github.com/jteeuwen/go-bindata/...
 go generate
 ```
 
