@@ -30,6 +30,7 @@ var (
 	namedPipe   = flag.String("winssh", "", "Named pipe for use with Win32 OpenSSH")
 	verbose     = flag.Bool("verbose", false, "Enable verbose logging")
 	systrayFlag = flag.Bool("systray", false, "Enable systray integration")
+	force       = flag.Bool("force", false, "Force socket usage (unlink existing socket)")
 )
 
 const (
@@ -209,6 +210,17 @@ func main() {
 	}()
 
 	if *unixSocket != "" {
+		if *force {
+			// If the socket file already exists then unlink it
+			_, err := os.Stat(*unixSocket)
+			if err == nil || !os.IsNotExist(err) {
+				err = syscall.Unlink(*unixSocket)
+				if err != nil {
+					log.Fatalf("Failed to unlink socket %s, error '%s'\n", *unixSocket, err)
+				}
+			}
+		}
+
 		unix, err = net.Listen("unix", *unixSocket)
 		if err != nil {
 			log.Fatalf("Could not open socket %s, error '%s'\n", *unixSocket, err)
