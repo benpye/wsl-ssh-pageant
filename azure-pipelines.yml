@@ -12,6 +12,7 @@ steps:
 - task: PowerShell@2
   inputs:
     filePath: '.\build.ps1'
+    arguments: '-Release'
 - task: PublishPipelineArtifact@0
   inputs:
     artifactName: 'build'
