@@ -16,3 +16,7 @@
 
 # Generated file
 assets.go
+
+# Build artifacts
+build/*
+release.zip
