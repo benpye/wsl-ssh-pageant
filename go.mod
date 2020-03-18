@@ -17,5 +17,5 @@ require (
 	github.com/lxn/win v0.0.0-20181015143721-a7f87360b10e
 	github.com/oxtoacart/bpool v0.0.0-20190227141107-8c4636f812cc // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/sys v0.0.0-20190405154228-4b34438f7a67
+	golang.org/x/sys v0.0.0-20200317113312-5766fd39f98d
 )
