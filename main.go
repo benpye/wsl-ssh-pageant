@@ -13,6 +13,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"os/user"
 	"reflect"
 	"sync"
 	"syscall"
@@ -53,7 +54,33 @@ type copyDataStruct struct {
 	lpData uintptr
 }
 
+type SecurityAttributes struct {
+	Length             uint32
+	SecurityDescriptor uintptr
+	InheritHandle      uint32
+}
+
 var queryPageantMutex sync.Mutex
+
+func makeInheritSaWithSid() *windows.SecurityAttributes {
+	var sa windows.SecurityAttributes
+
+	u, err := user.Current()
+
+	if err == nil {
+		sd, err := windows.SecurityDescriptorFromString("O:" + u.Uid)
+		if err == nil {
+			sa.SecurityDescriptor = sd
+		}
+	}
+
+	sa.Length = uint32(unsafe.Sizeof(sa))
+
+	sa.InheritHandle = 1
+
+	return &sa
+
+}
 
 func queryPageant(buf []byte) (result []byte, err error) {
 	if len(buf) > agentMaxMessageLength {
@@ -75,7 +102,9 @@ func queryPageant(buf []byte) (result []byte, err error) {
 	mapName := fmt.Sprintf("WSLPageantRequest")
 	queryPageantMutex.Lock()
 
-	fileMap, err := windows.CreateFileMapping(invalidHandleValue, nil, pageReadWrite, 0, agentMaxMessageLength, syscall.StringToUTF16Ptr(mapName))
+	var sa = makeInheritSaWithSid()
+
+	fileMap, err := windows.CreateFileMapping(invalidHandleValue, sa, pageReadWrite, 0, agentMaxMessageLength, syscall.StringToUTF16Ptr(mapName))
 	if err != nil {
 		queryPageantMutex.Unlock()
 		return
