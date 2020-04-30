@@ -239,14 +239,16 @@ func main() {
 	}()
 
 	if *unixSocket != "" {
-		if *force {
-			// If the socket file already exists then unlink it
-			_, err := os.Stat(*unixSocket)
-			if err == nil || !os.IsNotExist(err) {
+		_, err := os.Stat(*unixSocket)
+		if err == nil || !os.IsNotExist(err) {
+			if *force {
+				// If the socket file already exists then unlink it
 				err = syscall.Unlink(*unixSocket)
 				if err != nil {
 					log.Fatalf("Failed to unlink socket %s, error '%s'\n", *unixSocket, err)
 				}
+			} else {
+				log.Fatalf("Error: the SSH_AUTH_SOCK file already exists. Please delete it manually or use --force option.")
 			}
 		}
 
