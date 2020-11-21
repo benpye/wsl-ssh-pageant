@@ -61,6 +61,9 @@ go build -ldflags -H=windowsgui
 ## What version of Windows do I need?
 You need Windows 10 1803 or later for WSL support as it is the first version supporting `AF_UNIX` sockets. You can still use this with the native [Windows SSH client](https://github.com/PowerShell/Win32-OpenSSH/releases) on earlier builds.
 
+## The -gui.exe binary doesn't have a GUI? (immediately closes)
+The difference between the gui.exe binary and the regular binaries is the subsystem as set in the PE header. The gui.exe binary is set with the Win32 subsystem so that it doesn't spawn a command line, allowing it to be launched on startup. The regular binary has the console subsystem so it does launch a command line if double clicked, and will block the command line as expected. Note: You may launch either binary with the `-systray` flag to have a systray icon whilst the tool is running, this only provides a way to quit the application.
+
 ## You didn't answer my question!
 Please open an issue, I do try and keep on top of them, promise.
 
