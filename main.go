@@ -1,6 +1,5 @@
 package main
 
-//go:generate go run github.com/go-bindata/go-bindata/go-bindata -pkg $GOPACKAGE -o assets.go assets/
 
 import (
 	"bufio"
@@ -19,6 +18,8 @@ import (
 	"syscall"
 	"unsafe"
 
+	_ "embed"
+
 	"github.com/Microsoft/go-winio"
 	"github.com/apenwarr/fixconsole"
 	"github.com/getlantern/systray"
@@ -32,6 +33,9 @@ var (
 	verbose     = flag.Bool("verbose", false, "Enable verbose logging")
 	systrayFlag = flag.Bool("systray", false, "Enable systray integration")
 	force       = flag.Bool("force", false, "Force socket usage (unlink existing socket)")
+
+	//go:embed assets/icon.ico
+	icon []byte
 )
 
 const (
@@ -314,10 +318,7 @@ func onSystrayReady() {
 	systray.SetTitle("WSL-SSH-Pageant")
 	systray.SetTooltip("WSL-SSH-Pageant")
 
-	data, err := Asset("assets/icon.ico")
-	if err == nil {
-		systray.SetIcon(data)
-	}
+	systray.SetIcon(icon)
 
 	quit := systray.AddMenuItem("Quit", "Quits this app")
 

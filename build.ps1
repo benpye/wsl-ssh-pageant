@@ -27,10 +27,6 @@ $env:GOARCH=$null
 
 $returnValue = 0
 
-# Generate assets.go
-go generate
-if ($LastExitCode -ne 0) { $returnValue = $LastExitCode }
-
 # Build for each architecture
 Foreach ($arch in $Architectures)
 {
