@@ -55,7 +55,7 @@ go generate
 
 To create a build without a console window:
 ```
-go build -ldflags -H=windowsgui
+go build
 ```
 
 ## What version of Windows do I need?

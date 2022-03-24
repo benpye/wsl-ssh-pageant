@@ -12,9 +12,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
 	"os/user"
 	"reflect"
+	"strconv"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -32,6 +34,7 @@ var (
 	verbose     = flag.Bool("verbose", false, "Enable verbose logging")
 	systrayFlag = flag.Bool("systray", false, "Enable systray integration")
 	force       = flag.Bool("force", false, "Force socket usage (unlink existing socket)")
+	godaemon    = flag.Bool("d", false, "run app as a daemon with -d=true")
 )
 
 const (
@@ -221,7 +224,31 @@ func listenLoop(ln net.Listener) {
 func main() {
 	fixconsole.FixConsoleIfNeeded()
 	flag.Parse()
-
+	if *godaemon {
+		nargs := []string{}
+		if *unixSocket != "" {
+			nargs = append(nargs, fmt.Sprintf("--wsl=%s", *unixSocket))
+		}
+		if *namedPipe != "" {
+			nargs = append(nargs, fmt.Sprintf("--winssh=%s", *namedPipe))
+		}
+		if *verbose {
+			nargs = append(nargs, fmt.Sprintf("--verbose=%s", strconv.FormatBool(*verbose)))
+		}
+		if *systrayFlag {
+			nargs = append(nargs, fmt.Sprintf("--systray=%s", strconv.FormatBool(*systrayFlag)))
+		}
+		if *force {
+			nargs = append(nargs, fmt.Sprintf("--force=%s", strconv.FormatBool(*force)))
+		}
+		cmd := exec.Command(os.Args[0], nargs...)
+		if err := cmd.Start(); err != nil {
+			fmt.Printf("start %s failed, error: %v\n", os.Args[0], err)
+			os.Exit(1)
+		}
+		fmt.Printf("%s [PID] %d running...\n", os.Args[0], cmd.Process.Pid)
+		os.Exit(0)
+	}
 	var unix, pipe net.Listener
 	var err error
 
