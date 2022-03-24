@@ -24,6 +24,7 @@ import (
 	"github.com/Microsoft/go-winio"
 	"github.com/apenwarr/fixconsole"
 	"github.com/getlantern/systray"
+	_ "github.com/go-bindata/go-bindata"
 	"github.com/lxn/win"
 	"golang.org/x/sys/windows"
 )

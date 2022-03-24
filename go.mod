@@ -9,6 +9,7 @@ require (
 	github.com/getlantern/hidden v0.0.0-20220104173330-f221c5a24770 // indirect
 	github.com/getlantern/ops v0.0.0-20200403153110-8476b16edcd6 // indirect
 	github.com/getlantern/systray v1.2.1
+	github.com/go-bindata/go-bindata v3.1.2+incompatible
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	go.uber.org/atomic v1.9.0 // indirect
