@@ -12,10 +12,9 @@ require (
 	github.com/getlantern/hidden v0.0.0-20190325191715-f02dbb02be55 // indirect
 	github.com/getlantern/ops v0.0.0-20190325191751-d70cb0d6f85f // indirect
 	github.com/getlantern/systray v0.0.0-20190131073753-26d5b920200d
-	github.com/go-bindata/go-bindata v3.1.1+incompatible // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/lxn/win v0.0.0-20181015143721-a7f87360b10e
 	github.com/oxtoacart/bpool v0.0.0-20190227141107-8c4636f812cc // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/sys v0.0.0-20200317113312-5766fd39f98d
+	golang.org/x/sys v0.1.0
 )
